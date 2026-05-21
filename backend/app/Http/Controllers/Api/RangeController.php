@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRangeRequest;
 use App\Models\Range;
 
+use App\Models\RangeItem;
+
+use Illuminate\Http\Request;
+
 class RangeController extends Controller
 {
     public function index()
@@ -25,4 +29,30 @@ class RangeController extends Controller
             'data' => $range,
         ], 201);
     }
+
+    public function saveItems(
+        Request $request,
+        Range $range
+    )
+    {
+        $validated = $request->validate([
+            'items' => ['required', 'array'],
+        ]);
+
+        $range->items()->delete();
+
+        foreach ($validated['items'] as $item) {
+
+            RangeItem::create([
+                'range_id' => $range->id,
+                'hand' => $item['hand'],
+                'action' => $item['action'],
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Range items saved',
+        ]);
+    }    
+    
 }

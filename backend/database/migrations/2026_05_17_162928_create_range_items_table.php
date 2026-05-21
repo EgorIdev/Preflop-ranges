@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->string('hand');
 
-            $table->string('action');
+            $table->string('action')->default('raise');
 
             $table->timestamps();
         });

@@ -17,3 +17,21 @@ export const createRange = async (
 
   return response.data
 }
+
+export const saveRangeItems = async (
+  rangeId: number,
+  items: {
+    hand: string
+    action: string
+  }[]
+) => {
+
+  const response = await api.post(
+    `/ranges/${rangeId}/items`,
+    {
+      items,
+    }
+  )
+
+  return response.data
+}

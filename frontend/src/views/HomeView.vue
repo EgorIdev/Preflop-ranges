@@ -3,18 +3,62 @@ import { ref, onMounted } from 'vue'
 
 import {
   getRanges,
-  createRange
+  createRange,
+  saveRangeItems
 } from '../services/rangeService'
 
 import type { Range } from '../types/range'
 
+import RangeGrid from '../components/range-grid/RangeGrid.vue'
+
 const ranges = ref<Range[]>([])
 const rangeName = ref('')
 const rangeSpot = ref('')
+const selectedHands = ref<string[]>([])
 
 const loadRanges = async () => {
   try {
     ranges.value = await getRanges()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const toggleHand = (hand: string) => {
+
+  const index = selectedHands.value.indexOf(hand)
+
+  if (index === -1) {
+    selectedHands.value.push(hand)
+  }
+
+  else {
+    selectedHands.value.splice(index, 1)
+  }
+}
+
+const handleSaveRange = async () => {
+
+  try {
+
+    if (!ranges.value.length) {
+      return
+    }
+
+    const rangeId = ranges.value[0].id
+
+    const items = selectedHands.value.map(hand => ({
+      hand,
+      action: 'raise',
+    }))
+
+    await saveRangeItems(
+      rangeId,
+      items
+    )
+
+    alert('Range saved')
+
   } catch (error) {
     console.error(error)
   }
@@ -85,6 +129,13 @@ onMounted(() => {
       Create
     </button>
 
+    <button
+      @click="handleSaveRange"
+      class="bg-blue-600 px-6 py-2 rounded-xl mb-8"
+    >
+      Save Range
+    </button>
+
   </div>
 
 </div>
@@ -105,7 +156,14 @@ onMounted(() => {
         </div>
       </div>
 
+      <div class="mt-12">
+        <RangeGrid
+          :selectedHands="selectedHands"
+          @toggle-hand="toggleHand"
+        />
+      </div>
     </div>
 
   </div>
+  
 </template>
