@@ -15,13 +15,28 @@ const ranges = ref<Range[]>([])
 const rangeName = ref('')
 const rangeSpot = ref('')
 const selectedHands = ref<string[]>([])
+const currentRangeId = ref<number | null>(null)
 
 const loadRanges = async () => {
   try {
     ranges.value = await getRanges()
+
+  if (ranges.value.length > 0) {
+    loadRange(ranges.value[0])
+  }
+
+
   } catch (error) {
     console.error(error)
   }
+}
+
+const loadRange = (range: Range) => {
+
+  currentRangeId.value = range.id
+
+  selectedHands.value =
+    range.items.map(item => item.hand)
 }
 
 const toggleHand = (hand: string) => {
@@ -41,11 +56,9 @@ const handleSaveRange = async () => {
 
   try {
 
-    if (!ranges.value.length) {
+    if (!currentRangeId.value) {
       return
     }
-
-    const rangeId = ranges.value[0].id
 
     const items = selectedHands.value.map(hand => ({
       hand,
@@ -53,7 +66,7 @@ const handleSaveRange = async () => {
     }))
 
     await saveRangeItems(
-      rangeId,
+      currentRangeId.value,
       items
     )
 
@@ -142,11 +155,12 @@ onMounted(() => {
 
     <div class="space-y-4">
 
-      <div
-        v-for="range in ranges"
-        :key="range.id"
-        class="bg-zinc-800 p-4 rounded-xl"
-      >
+        <div
+          v-for="range in ranges"
+          :key="range.id"
+          @click="loadRange(range)"
+          class="bg-zinc-800 p-4 rounded-xl cursor-pointer"
+        >
         <div class="text-xl font-semibold">
           {{ range.name }}
         </div>
