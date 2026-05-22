@@ -7,12 +7,10 @@ export const getRanges = async () => {
 }
 
 export const createRange = async (
-  name: string,
-  spot: string
+  name: string
 ) => {
   const response = await api.post('/ranges', {
     name,
-    spot,
   })
 
   return response.data
@@ -31,6 +29,17 @@ export const saveRangeItems = async (
     {
       items,
     }
+  )
+
+  return response.data
+}
+
+export const deleteRange = async (
+  rangeId: number
+) => {
+
+  const response = await api.delete(
+    `/ranges/${rangeId}`
   )
 
   return response.data

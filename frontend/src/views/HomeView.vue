@@ -4,18 +4,21 @@ import { ref, onMounted } from 'vue'
 import {
   getRanges,
   createRange,
-  saveRangeItems
+  saveRangeItems,
+  deleteRange
 } from '../services/rangeService'
 
 import type { Range } from '../types/range'
+
+import type { RangeHand } from '../types/rangeHand'
 
 import RangeGrid from '../components/range-grid/RangeGrid.vue'
 
 const ranges = ref<Range[]>([])
 const rangeName = ref('')
-const rangeSpot = ref('')
-const selectedHands = ref<string[]>([])
+const selectedHands = ref<RangeHand[]>([])
 const currentRangeId = ref<number | null>(null)
+const currentAction = ref<'raise' | 'call'>('raise')
 
 const loadRanges = async () => {
   try {
@@ -36,20 +39,40 @@ const loadRange = (range: Range) => {
   currentRangeId.value = range.id
 
   selectedHands.value =
-    range.items.map(item => item.hand)
+  range.items.map(item => ({
+    hand: item.hand,
+    action: item.action as 'raise' | 'call',
+  }))
 }
 
 const toggleHand = (hand: string) => {
 
-  const index = selectedHands.value.indexOf(hand)
+  const existing =
+    selectedHands.value.find(
+      item => item.hand === hand
+    )
 
-  if (index === -1) {
-    selectedHands.value.push(hand)
+  if (!existing) {
+
+    selectedHands.value.push({
+      hand,
+      action: currentAction.value,
+    })
+
+    return
   }
 
-  else {
-    selectedHands.value.splice(index, 1)
+  if (existing.action === currentAction.value) {
+
+    selectedHands.value =
+      selectedHands.value.filter(
+        item => item.hand !== hand
+      )
+
+    return
   }
+
+  existing.action = currentAction.value
 }
 
 const handleSaveRange = async () => {
@@ -60,10 +83,7 @@ const handleSaveRange = async () => {
       return
     }
 
-    const items = selectedHands.value.map(hand => ({
-      hand,
-      action: 'raise',
-    }))
+    const items = selectedHands.value
 
     await saveRangeItems(
       currentRangeId.value,
@@ -77,18 +97,38 @@ const handleSaveRange = async () => {
   }
 }
 
+const handleDeleteRange = async (
+  rangeId: number
+) => {
+
+  try {
+
+    await deleteRange(rangeId)
+
+    if (currentRangeId.value === rangeId) {
+
+      selectedHands.value = []
+
+      currentRangeId.value = null
+    }
+
+    await loadRanges()
+
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 const handleCreateRange = async () => {
   try {
 
     await createRange(
-      rangeName.value,
-      rangeSpot.value
+      rangeName.value
     )
 
     await loadRanges()
 
     rangeName.value = ''
-    rangeSpot.value = ''
 
   } catch (error) {
     console.error(error)
@@ -128,12 +168,6 @@ onMounted(() => {
       class="bg-zinc-900 px-4 py-2 rounded-xl w-full"
     />
 
-    <input
-      v-model="rangeSpot"
-      type="text"
-      placeholder="Spot"
-      class="bg-zinc-900 px-4 py-2 rounded-xl w-full"
-    />
 
     <button
       @click="handleCreateRange"
@@ -142,12 +176,6 @@ onMounted(() => {
       Create
     </button>
 
-    <button
-      @click="handleSaveRange"
-      class="bg-blue-600 px-6 py-2 rounded-xl mb-8"
-    >
-      Save Range
-    </button>
 
   </div>
 
@@ -159,22 +187,99 @@ onMounted(() => {
           v-for="range in ranges"
           :key="range.id"
           @click="loadRange(range)"
-          class="bg-zinc-800 p-4 rounded-xl cursor-pointer"
-        >
-        <div class="text-xl font-semibold">
-          {{ range.name }}
-        </div>
+          :class="
+            currentRangeId === range.id
+              ? 'bg-zinc-700 border border-blue-500'
+              : 'bg-zinc-800'
+          "
 
-        <div class="text-zinc-400">
-          {{ range.spot }}
+          class="
+            p-4
+            rounded-xl
+            cursor-pointer
+            transition
+          "
+        >
+        <div class="flex items-center justify-between">
+
+          <div>
+
+            <div class="text-xl font-semibold">
+              {{ range.name }}
+            </div>
+
+          </div>
+
+          <div class="flex gap-2">
+
+            <button
+              @click.stop="handleSaveRange"
+              class="
+                bg-blue-600
+                hover:bg-blue-500
+                px-4
+                py-2
+                rounded-xl
+                transition
+              "
+            >
+              Save
+            </button>
+
+            <button
+              @click.stop="handleDeleteRange(range.id)"
+              class="
+                bg-red-700
+                hover:bg-red-600
+                px-4
+                py-2
+                rounded-xl
+                transition
+              "
+            >
+              Delete
+            </button>
+
+          </div>
+
         </div>
       </div>
 
       <div class="mt-12">
+
+        <div class="flex gap-4 mb-6">
+
+          <button
+            @click="currentAction = 'raise'"
+            class="px-4 py-2 rounded-xl"
+            :class="
+              currentAction === 'raise'
+                ? 'bg-red-600'
+                : 'bg-zinc-700'
+            "
+          >
+            Raise
+          </button>
+
+          <button
+            @click="currentAction = 'call'"
+            class="px-4 py-2 rounded-xl"
+            :class="
+              currentAction === 'call'
+                ? 'bg-green-600'
+                : 'bg-zinc-700'
+            "
+          >
+            Call
+          </button>
+
+        </div>
+
         <RangeGrid
           :selectedHands="selectedHands"
           @toggle-hand="toggleHand"
         />
+
       </div>
     </div>
 

@@ -11,3 +11,8 @@ Route::post(
     '/ranges/{range}/items',
     [RangeController::class, 'saveItems']
 );
+
+Route::delete(
+    '/ranges/{range}',
+    [RangeController::class, 'destroy']
+);

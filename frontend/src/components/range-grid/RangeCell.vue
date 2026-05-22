@@ -2,7 +2,8 @@
 defineProps<{
   hand: string
   selected: boolean
-}>()
+  action?: 'raise' | 'call'
+  }>()
 
 const emit = defineEmits<{
   (e: 'mousedown'): void
@@ -28,10 +29,13 @@ const emit = defineEmits<{
       border
       select-none
     "
-    :class="selected
-      ? 'bg-red-600 border-red-400'
-      : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700'
-    "
+    :class="[
+      selected
+        ? action === 'raise'
+          ? 'bg-red-600 border-red-400'
+          : 'bg-green-600 border-green-400'
+        : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700'
+    ]"
   >
     {{ hand }}
   </div>

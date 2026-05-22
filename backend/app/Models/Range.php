@@ -13,7 +13,6 @@ class Range extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'spot',
     ];
 
     public function items()

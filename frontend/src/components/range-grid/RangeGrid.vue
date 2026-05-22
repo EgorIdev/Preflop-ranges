@@ -5,8 +5,10 @@ import { generateGrid } from '../../utils/poker'
 
 import RangeCell from './RangeCell.vue'
 
+import type { RangeHand } from '../../types/rangeHand'
+
 const props = defineProps<{
-  selectedHands: string[]
+  selectedHands: RangeHand[]
 }>()
 
 const emit = defineEmits<{
@@ -59,14 +61,26 @@ onUnmounted(() => {
       :key="row[0]"
     >
 
-      <RangeCell
-        v-for="hand in row"
-        :key="hand"
-        :hand="hand"
-        :selected="props.selectedHands.includes(hand)"
-        @mousedown="handleMouseDown(hand)"
-        @mouseenter="handleMouseEnter(hand)"
-      />
+    <RangeCell
+      v-for="hand in row"
+      :key="hand"
+      :hand="hand"
+
+      :selected="
+        props.selectedHands.some(
+          item => item.hand === hand
+        )
+      "
+
+      :action="
+        props.selectedHands.find(
+          item => item.hand === hand
+        )?.action
+      "
+
+      @mousedown="handleMouseDown(hand)"
+      @mouseenter="handleMouseEnter(hand)"
+    />
 
     </template>
 

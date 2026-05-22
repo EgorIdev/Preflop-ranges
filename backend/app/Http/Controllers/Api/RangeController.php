@@ -21,13 +21,9 @@ class RangeController extends Controller
     {
         $range = Range::create([
             'name' => $request->name,
-            'spot' => $request->spot,
         ]);
 
-        return response()->json([
-            'message' => 'Range created successfully',
-            'data' => $range,
-        ], 201);
+    return response()->json($range);
     }
 
     public function saveItems(
@@ -54,5 +50,6 @@ class RangeController extends Controller
             'message' => 'Range items saved',
         ]);
     }    
+    
     
 }
