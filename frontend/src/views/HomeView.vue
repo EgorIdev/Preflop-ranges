@@ -114,8 +114,17 @@ const handleDeleteRange = async (
 
     await loadRanges()
 
-  } catch (error) {
+  } catch (error: any) {
+
     console.error(error)
+
+    alert(
+      JSON.stringify(
+        error.response?.data,
+        null,
+        2
+      )
+    )
   }
 }
 
@@ -130,9 +139,18 @@ const handleCreateRange = async () => {
 
     rangeName.value = ''
 
-  } catch (error) {
-    console.error(error)
-  }
+  } catch (error: any) {
+
+      console.error(error)
+
+      alert(
+        JSON.stringify(
+          error.response?.data,
+          null,
+          2
+        )
+      )
+    }
 }
 
 onMounted(() => {

@@ -26,6 +26,17 @@ class RangeController extends Controller
     return response()->json($range);
     }
 
+    public function destroy(Range $range)
+    {
+        $range->items()->delete();
+
+        $range->delete();
+
+        return response()->json([
+            'message' => 'Range deleted'
+        ]);
+    }
+
     public function saveItems(
         Request $request,
         Range $range
