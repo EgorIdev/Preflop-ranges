@@ -52,7 +52,8 @@ onUnmounted(() => {
     class="
       grid
       grid-cols-13
-      gap-1
+      gap-[2px]
+      max-w-[700px]
     "
   >
 

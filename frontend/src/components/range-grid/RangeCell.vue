@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 
 import type {
   RangeHand
@@ -6,7 +7,6 @@ import type {
 
 const props = defineProps<{
   hand: string
-
   rangeHand?: RangeHand
 }>()
 
@@ -15,6 +15,50 @@ const emit = defineEmits<{
   (e: 'mouseenter'): void
 }>()
 
+const backgroundStyle = computed(() => {
+
+  if (!props.rangeHand) {
+
+    return {
+      background: '#27272a',
+    }
+  }
+
+  const raise =
+    props.rangeHand.raise_percentage
+
+  const call =
+    props.rangeHand.call_percentage
+
+  const fold =
+    props.rangeHand.fold_percentage
+
+  const raiseColor = '#dc2626'
+  const callColor = '#16a34a'
+  const foldColor = '#27272a'
+
+  const raiseEnd = raise
+
+  const callEnd =
+    raise + call
+
+  return {
+    background: `
+      linear-gradient(
+        to bottom,
+
+        ${raiseColor} 0%,
+        ${raiseColor} ${raiseEnd}%,
+
+        ${callColor} ${raiseEnd}%,
+        ${callColor} ${callEnd}%,
+
+        ${foldColor} ${callEnd}%,
+        ${foldColor} 100%
+      )
+    `,
+  }
+})
 </script>
 
 <template>
@@ -22,72 +66,28 @@ const emit = defineEmits<{
   <div
     @mousedown="emit('mousedown')"
     @mouseenter="emit('mouseenter')"
+
     class="
-      relative
+      w-11
+      h-11
       aspect-square
       rounded
-      overflow-hidden
+      flex
+      items-center
+      justify-center
+      text-[18px]
+      font-semibold
       cursor-pointer
+      transition
       border
       border-zinc-700
       select-none
+      hover:brightness-110
     "
+
+    :style="backgroundStyle"
   >
-
-    <!-- RAISE COLOR -->
-    <div
-      v-if="rangeHand?.raise_percentage"
-
-      class="
-        absolute
-        left-0
-        top-0
-        bottom-0
-        bg-red-600
-      "
-
-      :style="{
-        width:
-          rangeHand.raise_percentage + '%'
-      }"
-    />
-
-    <!-- CALL COLOR -->
-    <div
-      v-if="rangeHand?.call_percentage"
-
-      class="
-        absolute
-        top-0
-        bottom-0
-        bg-green-600
-      "
-
-      :style="{
-        left:
-          rangeHand.raise_percentage + '%',
-
-        width:
-          rangeHand.call_percentage + '%'
-      }"
-    />
-
-    <!-- HAND LABEL -->
-    <div
-      class="
-        absolute
-        inset-0
-        flex
-        items-center
-        justify-center
-        text-sm
-        font-semibold
-        text-white
-      "
-    >
-      {{ hand }}
-    </div>
-
+    {{ hand }}
   </div>
 
 </template>

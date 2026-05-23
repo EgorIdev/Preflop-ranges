@@ -5,7 +5,8 @@ import {
   getRanges,
   createRange,
   saveRangeItems,
-  deleteRange
+  deleteRange,
+  copyRange
 } from '../services/rangeService'
 
 import type { Range } from '../types/range'
@@ -28,7 +29,9 @@ const rangeName = ref('')
 const selectedHands = ref<RangeHand[]>([])
 const currentRangeId = ref<number | null>(null)
 const currentAction =
-  ref<'raise' | 'call'>('raise')
+  ref<'raise' | 'call' | 'erase'>(
+    'raise'
+  )
 
 const currentPercentage =
   ref(100)
@@ -37,12 +40,65 @@ const groups = ref<RangeGroup[]>([])
 const groupName = ref('')
 const currentGroupId =
   ref<number | null>(null)
+const openedGroups =
+  ref<number[]>([])
+
+const openedGroupMenuId =
+  ref<number | null>(null)
+
+const openedRangeMenuId =
+  ref<number | null>(null)
 
 const selectGroup = (
   groupId: number
 ) => {
 
-  currentGroupId.value = groupId
+  currentGroupId.value =
+    currentGroupId.value === groupId
+      ? null
+      : groupId
+}
+const toggleGroup = (
+  groupId: number
+) => {
+
+  selectGroup(groupId)
+
+  if (
+    openedGroups.value.includes(groupId)
+  ) {
+
+    openedGroups.value =
+      openedGroups.value.filter(
+        id => id !== groupId
+      )
+
+    return
+  }
+
+  openedGroups.value.push(groupId)
+}
+const toggleGroupMenu = (
+  groupId: number
+) => {
+
+  openedGroupMenuId.value =
+    openedGroupMenuId.value === groupId
+      ? null
+      : groupId
+
+  openedRangeMenuId.value = null
+}
+const toggleRangeMenu = (
+  rangeId: number
+) => {
+
+  openedRangeMenuId.value =
+    openedRangeMenuId.value === rangeId
+      ? null
+      : rangeId
+
+  openedGroupMenuId.value = null
 }
 const loadGroups = async () => {
 
@@ -116,6 +172,20 @@ const toggleHand = (hand: string) => {
       item => item.hand === hand
     )
 
+// ERASE MODE
+
+  if (
+    currentAction.value === 'erase'
+  ) {
+
+    selectedHands.value =
+      selectedHands.value.filter(
+        item => item.hand !== hand
+      )
+
+    return
+  }
+
   // ЕСЛИ РУКИ ЕЩЕ НЕТ
   if (!existing) {
 
@@ -147,6 +217,17 @@ const toggleHand = (hand: string) => {
     existing.raise_percentage =
       currentPercentage.value
 
+    // LIMIT
+
+    if (
+      existing.raise_percentage
+      + existing.call_percentage
+      > 100
+    ) {
+      existing.call_percentage =
+        100 - existing.raise_percentage
+    }
+
     existing.fold_percentage =
       100
       - existing.raise_percentage
@@ -157,6 +238,17 @@ const toggleHand = (hand: string) => {
 
     existing.call_percentage =
       currentPercentage.value
+
+    // LIMIT
+
+    if (
+      existing.raise_percentage
+      + existing.call_percentage
+      > 100
+    ) {
+      existing.raise_percentage =
+        100 - existing.call_percentage
+    }
 
     existing.fold_percentage =
       100
@@ -189,6 +281,24 @@ const handleSaveRange = async () => {
     alert('Range saved')
 
   } catch (error) {
+    console.error(error)
+  }
+}
+
+const handleCopyRange = async (
+  rangeId: number
+) => {
+
+  try {
+
+    await copyRange(rangeId)
+
+    await loadGroups()
+
+    await loadRanges()
+
+  } catch (error) {
+
     console.error(error)
   }
 }
@@ -258,7 +368,7 @@ onMounted(() => {
 
 <template>
 
-  <div class="min-h-screen bg-zinc-900 text-white p-8">
+  <div class="min-h-screen bg-zinc-900 text-white p-8 overflow-x-hidden">
 
     <!-- HEADER -->
     <div
@@ -302,30 +412,30 @@ onMounted(() => {
 
     </div>
 
-    <!-- MAIN LAYOUT -->
+    <!-- MAIN -->
     <div
       class="
         grid
         grid-cols-1
-        lg:grid-cols-2
-        gap-8
+        lg:grid-cols-[420px_1fr]
+        gap-10
         items-start
       "
     >
 
       <!-- LEFT PANEL -->
-      <div class="space-y-6">
+      <div class="space-y-6 relative z-10">
 
         <!-- CREATE GROUP -->
         <div
           class="
             bg-zinc-800
-            p-6
+            p-4
             rounded-xl
           "
         >
 
-          <div class="flex gap-4">
+          <div class="flex gap-3">
 
             <input
               v-model="groupName"
@@ -344,12 +454,15 @@ onMounted(() => {
               @click="handleCreateGroup"
               class="
                 bg-purple-600
-                px-6
-                py-2
-                rounded-xl
+                hover:bg-purple-500
+                px-3
+                py-1.5
+                rounded-lg
+                text-sm
+                transition
               "
             >
-              Create Group
+              Create
             </button>
 
           </div>
@@ -360,12 +473,12 @@ onMounted(() => {
         <div
           class="
             bg-zinc-800
-            p-6
+            p-4
             rounded-xl
           "
         >
 
-          <div class="flex gap-4">
+          <div class="flex gap-3">
 
             <input
               v-model="rangeName"
@@ -384,9 +497,12 @@ onMounted(() => {
               @click="handleCreateRange"
               class="
                 bg-green-600
-                px-6
-                py-2
-                rounded-xl
+                hover:bg-green-500
+                px-3
+                py-1.5
+                rounded-lg
+                text-sm
+                transition
               "
             >
               Create
@@ -396,115 +512,232 @@ onMounted(() => {
 
         </div>
 
-
         <!-- GROUPS -->
-        <div class="space-y-6">
+        <div class="space-y-4">
 
           <div
             v-for="group in groups"
             :key="group.id"
-            @click="selectGroup(group.id)"
             class="
               rounded-xl
-              p-4
-              transition
-              cursor-pointer
-            "
-            :class="
-              currentGroupId === group.id
-                ? 'bg-zinc-700 ring-2 ring-blue-500'
-                : 'bg-zinc-800'
+              border
+              border-zinc-700
+              bg-zinc-800
+              relative
+              overflow-visible
             "
           >
 
             <!-- GROUP HEADER -->
             <div
+              @click="toggleGroup(group.id)"
               class="
                 flex
                 items-center
                 justify-between
-                mb-4
+                px-4
+                py-3
+                cursor-pointer
+                transition
+              "
+              :class="
+                currentGroupId === group.id
+                  ? 'bg-zinc-700'
+                  : 'bg-zinc-800'
               "
             >
 
               <div
                 class="
-                  text-2xl
-                  font-bold
+                  flex
+                  items-center
+                  gap-3
                 "
               >
-                {{ group.name }}
+
+                <div
+                  class="
+                    text-sm
+                    text-zinc-400
+                  "
+                >
+                  {{
+                    openedGroups.includes(group.id)
+                      ? '−'
+                      : '+'
+                  }}
+                </div>
+
+                <div
+                  class="
+                    text-xl
+                    font-bold
+                  "
+                >
+                  {{ group.name }}
+                </div>
+
               </div>
 
-              <div class="flex gap-2">
+              <!-- GROUP MENU -->
+              <div class="relative">
 
                 <button
+                  @click.stop="
+                    toggleGroupMenu(group.id)
+                  "
                   class="
-                    bg-yellow-600
-                    px-3
-                    py-1
+                    w-8
+                    h-8
                     rounded-lg
+                    hover:bg-zinc-600
+                    transition
                   "
                 >
-                  Rename
+                  ⋮
                 </button>
 
-                <button
+                <div
+                  v-if="
+                    openedGroupMenuId === group.id
+                  "
                   class="
-                    bg-blue-600
-                    px-3
-                    py-1
-                    rounded-lg
+                    absolute
+                    right-0
+                    top-10
+                    w-40
+                    bg-zinc-800
+                    border
+                    border-zinc-700
+                    rounded-xl
+                    shadow-2xl
+                    z-[9999]
+                    overflow-hidden
                   "
                 >
-                  Save
-                </button>
 
-                <button
-                  class="
-                    bg-red-600
-                    px-3
-                    py-1
-                    rounded-lg
-                  "
-                >
-                  Delete
-                </button>
+                  <button
+                    class="
+                      w-full
+                      text-left
+                      px-4
+                      py-2
+                      hover:bg-zinc-700
+                    "
+                  >
+                    Rename
+                  </button>
+
+                  <button
+                    class="
+                      w-full
+                      text-left
+                      px-4
+                      py-2
+                      hover:bg-zinc-700
+                    "
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    class="
+                      w-full
+                      text-left
+                      px-4
+                      py-2
+                      hover:bg-red-700
+                    "
+                  >
+                    Delete
+                  </button>
+
+                </div>
 
               </div>
 
             </div>
 
-            <!-- RANGES -->
-            <div class="space-y-2">
+            <!-- GROUP CONTENT -->
+            <div
+              v-if="
+                openedGroups.includes(group.id)
+              "
+              class="
+                bg-zinc-900
+                p-3
+                space-y-2
+              "
+            >
 
+              <!-- RANGES -->
               <div
                 v-for="range in group.ranges"
                 :key="range.id"
                 @click.stop="loadRange(range)"
                 class="
-                  bg-zinc-900
-                  p-4
+                  bg-zinc-800
+                  hover:bg-zinc-700
+                  transition
+                  p-3
                   rounded-xl
+                  flex
+                  items-center
+                  justify-between
                   cursor-pointer
                 "
               >
 
-                <div class="flex justify-between">
+                <div class="font-semibold">
+                  {{ range.name }}
+                </div>
 
-                  <div class="font-semibold">
-                    {{ range.name }}
-                  </div>
+                <!-- RANGE MENU -->
+                <div class="relative">
 
-                  <div class="flex gap-2">
+                  <button
+                    @click.stop="
+                      toggleRangeMenu(range.id)
+                    "
+                    class="
+                      w-8
+                      h-8
+                      rounded-lg
+                      hover:bg-zinc-600
+                    "
+                  >
+                    ⋮
+                  </button>
+
+                  <div
+                    v-if="
+                      openedRangeMenuId === range.id
+                    "
+                    class="
+                      absolute
+                      right-0
+                      top-10
+                      w-40
+                      bg-zinc-800
+                      border
+                      border-zinc-700
+                      rounded-xl
+                      shadow-2xl
+                      z-[9999]
+                      overflow-hidden
+                    "
+                  >
 
                     <button
-                      @click.stop="handleSaveRange"
+                      @click.stop="
+                        handleSaveRange
+                      "
                       class="
-                        bg-blue-600
-                        px-3
-                        py-1
-                        rounded-lg
+                        w-full
+                        text-left
+                        px-4
+                        py-2
+                        hover:bg-zinc-700
                       "
                     >
                       Save
@@ -512,21 +745,26 @@ onMounted(() => {
 
                     <button
                       class="
-                        bg-yellow-600
-                        px-3
-                        py-1
-                        rounded-lg
+                        w-full
+                        text-left
+                        px-4
+                        py-2
+                        hover:bg-zinc-700
                       "
                     >
                       Rename
                     </button>
 
                     <button
+                      @click.stop="
+                        handleCopyRange(range.id)
+                      "
                       class="
-                        bg-purple-600
-                        px-3
-                        py-1
-                        rounded-lg
+                        w-full
+                        text-left
+                        px-4
+                        py-2
+                        hover:bg-zinc-700
                       "
                     >
                       Copy
@@ -537,10 +775,11 @@ onMounted(() => {
                         handleDeleteRange(range.id)
                       "
                       class="
-                        bg-red-600
-                        px-3
-                        py-1
-                        rounded-lg
+                        w-full
+                        text-left
+                        px-4
+                        py-2
+                        hover:bg-red-700
                       "
                     >
                       Delete
@@ -561,14 +800,33 @@ onMounted(() => {
       </div>
 
       <!-- RIGHT PANEL -->
-      <div>
+      <div
+        class="
+          flex
+          flex-col
+          items-start
+          pl-4
+        "
+      >
 
-        <!-- ACTION BUTTONS -->
-        <div class="flex gap-4 mb-6">
+        <!-- ACTIONS -->
+        <div
+          class="
+            flex
+            flex-wrap
+            gap-4
+            items-center
+            mb-6
+          "
+        >
 
           <button
             @click="currentAction = 'raise'"
-            class="px-4 py-2 rounded-xl"
+            class="
+              px-4
+              py-2
+              rounded-xl
+            "
             :class="
               currentAction === 'raise'
                 ? 'bg-red-600'
@@ -580,7 +838,11 @@ onMounted(() => {
 
           <button
             @click="currentAction = 'call'"
-            class="px-4 py-2 rounded-xl"
+            class="
+              px-4
+              py-2
+              rounded-xl
+            "
             :class="
               currentAction === 'call'
                 ? 'bg-green-600'
@@ -590,16 +852,33 @@ onMounted(() => {
             Call
           </button>
 
+          <button
+            @click="currentAction = 'erase'"
+            class="
+              px-4
+              py-2
+              rounded-xl
+            "
+            :class="
+              currentAction === 'erase'
+                ? 'bg-zinc-500'
+                : 'bg-zinc-700'
+            "
+          >
+            Erase
+          </button>
+
+          <!-- PERCENT -->
           <div
             class="
               flex
               items-center
               gap-4
-              mb-6
+              min-w-[260px]
             "
           >
 
-            <div class="w-24">
+            <div class="w-16">
               {{ currentPercentage }}%
             </div>
 
@@ -611,15 +890,25 @@ onMounted(() => {
               class="w-full"
             />
 
-          </div>          
+          </div>
 
         </div>
 
-        <!-- RANGE GRID -->
-        <RangeGrid
-          :selectedHands="selectedHands"
-          @toggle-hand="toggleHand"
-        />
+        <!-- GRID -->
+        <div
+          class="
+            bg-zinc-900
+            rounded-2xl
+            p-2
+          "
+        >
+
+          <RangeGrid
+            :selectedHands="selectedHands"
+            @toggle-hand="toggleHand"
+          />
+
+        </div>
 
       </div>
 

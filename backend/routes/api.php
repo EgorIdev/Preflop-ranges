@@ -18,6 +18,11 @@ Route::delete(
     [RangeController::class, 'destroy']
 );
 
+Route::post(
+    '/ranges/{range}/copy',
+    [RangeController::class, 'copy']
+);
+
 Route::get(
     '/range-groups',
     [RangeGroupController::class, 'index']

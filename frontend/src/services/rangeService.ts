@@ -46,3 +46,15 @@ export const deleteRange = async (
 
   return response.data
 }
+
+export const copyRange = async (
+  rangeId: number
+) => {
+
+  const response =
+    await api.post(
+      `/ranges/${rangeId}/copy`
+    )
+
+  return response.data
+}
