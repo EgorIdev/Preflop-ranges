@@ -21,6 +21,7 @@ class RangeController extends Controller
     {
         $range = Range::create([
             'name' => $request->name,
+            'group_id' => $request->group_id,
         ]);
 
     return response()->json($range);

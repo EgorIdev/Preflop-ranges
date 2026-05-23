@@ -4,29 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\RangeItem;
 use App\Models\RangeGroup;
 
-class Range extends Model
+class RangeGroup extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'name',
-        'group_id',
     ];
 
-    public function items()
+    public function ranges()
     {
-        return $this->hasMany(RangeItem::class);
+        return $this->hasMany(
+            Range::class,
+            'group_id'
+        );
     }
 
     public function group()
     {
         return $this->belongsTo(
-            RangeGroup::class,
-            'group_id'
+            RangeGroup::class
         );
     }
 }

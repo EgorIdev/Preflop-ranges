@@ -15,6 +15,11 @@ class StoreRangeRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string'],
+
+            'group_id' => [
+                'nullable',
+                'integer',
+            ],
         ];
     }
 }

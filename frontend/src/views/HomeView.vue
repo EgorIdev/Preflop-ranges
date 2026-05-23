@@ -14,11 +14,62 @@ import type { RangeHand } from '../types/rangeHand'
 
 import RangeGrid from '../components/range-grid/RangeGrid.vue'
 
+import {
+  getRangeGroups,
+  createRangeGroup
+} from '../services/rangeGroupService'
+
+import type {
+  RangeGroup
+} from '../types/range-group'
+
 const ranges = ref<Range[]>([])
 const rangeName = ref('')
 const selectedHands = ref<RangeHand[]>([])
 const currentRangeId = ref<number | null>(null)
 const currentAction = ref<'raise' | 'call'>('raise')
+
+const groups = ref<RangeGroup[]>([])
+const groupName = ref('')
+const currentGroupId =
+  ref<number | null>(null)
+
+const selectGroup = (
+  groupId: number
+) => {
+
+  currentGroupId.value = groupId
+}
+const loadGroups = async () => {
+
+  try {
+
+    groups.value =
+      await getRangeGroups()
+
+  } catch (error) {
+
+    console.error(error)
+  }
+}
+
+const handleCreateGroup = async () => {
+
+  try {
+
+    await createRangeGroup(
+      groupName.value
+    )
+
+    await loadGroups()
+
+    groupName.value = ''
+
+  } catch (error) {
+
+    console.error(error)
+  }
+}
 
 const loadRanges = async () => {
   try {
@@ -132,7 +183,8 @@ const handleCreateRange = async () => {
   try {
 
     await createRange(
-      rangeName.value
+      rangeName.value,
+      currentGroupId.value
     )
 
     await loadRanges()
@@ -155,116 +207,318 @@ const handleCreateRange = async () => {
 
 onMounted(() => {
   loadRanges()
+  loadGroups()
 })
 </script>
 
 <template>
+
   <div class="min-h-screen bg-zinc-900 text-white p-8">
 
-    <h1 class="text-4xl font-bold mb-8">
-      Preflop Ranges
-    </h1>
-
-    <div class="flex gap-4 mb-8">
-      <button class="bg-blue-600 px-4 py-2 rounded-xl">
-        Editor
-      </button>
-
-      <button class="bg-zinc-700 px-4 py-2 rounded-xl">
-        Trainer
-      </button>
-    </div>
-
-    <div class="bg-zinc-800 p-6 rounded-xl mb-8">
-
-  <div class="flex gap-4">
-
-    <input
-      v-model="rangeName"
-      type="text"
-      placeholder="Range name"
-      class="bg-zinc-900 px-4 py-2 rounded-xl w-full"
-    />
-
-
-    <button
-      @click="handleCreateRange"
-      class="bg-green-600 px-6 py-2 rounded-xl"
+    <!-- HEADER -->
+    <div
+      class="
+        flex
+        items-center
+        justify-between
+        mb-8
+      "
     >
-      Create
-    </button>
 
+      <h1 class="text-4xl font-bold">
+        Preflop Ranges
+      </h1>
 
-  </div>
+      <div class="flex gap-4">
 
-</div>
-
-    <div class="space-y-4">
-
-        <div
-          v-for="range in ranges"
-          :key="range.id"
-          @click="loadRange(range)"
-          :class="
-            currentRangeId === range.id
-              ? 'bg-zinc-700 border border-blue-500'
-              : 'bg-zinc-800'
-          "
-
+        <button
           class="
-            p-4
+            bg-blue-600
+            px-4
+            py-2
             rounded-xl
-            cursor-pointer
-            transition
           "
         >
-        <div class="flex items-center justify-between">
+          Editor
+        </button>
 
-          <div>
+        <button
+          class="
+            bg-zinc-700
+            px-4
+            py-2
+            rounded-xl
+          "
+        >
+          Trainer
+        </button>
 
-            <div class="text-xl font-semibold">
-              {{ range.name }}
-            </div>
+      </div>
 
-          </div>
+    </div>
 
-          <div class="flex gap-2">
+    <!-- MAIN LAYOUT -->
+    <div
+      class="
+        grid
+        grid-cols-1
+        lg:grid-cols-2
+        gap-8
+        items-start
+      "
+    >
 
-            <button
-              @click.stop="handleSaveRange"
+      <!-- LEFT PANEL -->
+      <div class="space-y-6">
+
+        <!-- CREATE GROUP -->
+        <div
+          class="
+            bg-zinc-800
+            p-6
+            rounded-xl
+          "
+        >
+
+          <div class="flex gap-4">
+
+            <input
+              v-model="groupName"
+              type="text"
+              placeholder="Group name"
               class="
-                bg-blue-600
-                hover:bg-blue-500
+                bg-zinc-900
                 px-4
                 py-2
                 rounded-xl
-                transition
+                w-full
               "
-            >
-              Save
-            </button>
+            />
 
             <button
-              @click.stop="handleDeleteRange(range.id)"
+              @click="handleCreateGroup"
               class="
-                bg-red-700
-                hover:bg-red-600
-                px-4
+                bg-purple-600
+                px-6
                 py-2
                 rounded-xl
-                transition
               "
             >
-              Delete
+              Create Group
             </button>
 
           </div>
 
         </div>
+
+        <!-- CREATE RANGE -->
+        <div
+          class="
+            bg-zinc-800
+            p-6
+            rounded-xl
+          "
+        >
+
+          <div class="flex gap-4">
+
+            <input
+              v-model="rangeName"
+              type="text"
+              placeholder="Range name"
+              class="
+                bg-zinc-900
+                px-4
+                py-2
+                rounded-xl
+                w-full
+              "
+            />
+
+            <button
+              @click="handleCreateRange"
+              class="
+                bg-green-600
+                px-6
+                py-2
+                rounded-xl
+              "
+            >
+              Create
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- GROUPS -->
+        <div class="space-y-6">
+
+          <div
+            v-for="group in groups"
+            :key="group.id"
+            @click="selectGroup(group.id)"
+            class="
+              rounded-xl
+              p-4
+              transition
+              cursor-pointer
+            "
+            :class="
+              currentGroupId === group.id
+                ? 'bg-zinc-700 ring-2 ring-blue-500'
+                : 'bg-zinc-800'
+            "
+          >
+
+            <!-- GROUP HEADER -->
+            <div
+              class="
+                flex
+                items-center
+                justify-between
+                mb-4
+              "
+            >
+
+              <div
+                class="
+                  text-2xl
+                  font-bold
+                "
+              >
+                {{ group.name }}
+              </div>
+
+              <div class="flex gap-2">
+
+                <button
+                  class="
+                    bg-yellow-600
+                    px-3
+                    py-1
+                    rounded-lg
+                  "
+                >
+                  Rename
+                </button>
+
+                <button
+                  class="
+                    bg-blue-600
+                    px-3
+                    py-1
+                    rounded-lg
+                  "
+                >
+                  Save
+                </button>
+
+                <button
+                  class="
+                    bg-red-600
+                    px-3
+                    py-1
+                    rounded-lg
+                  "
+                >
+                  Delete
+                </button>
+
+              </div>
+
+            </div>
+
+            <!-- RANGES -->
+            <div class="space-y-2">
+
+              <div
+                v-for="range in group.ranges"
+                :key="range.id"
+                @click.stop="loadRange(range)"
+                class="
+                  bg-zinc-900
+                  p-4
+                  rounded-xl
+                  cursor-pointer
+                "
+              >
+
+                <div class="flex justify-between">
+
+                  <div class="font-semibold">
+                    {{ range.name }}
+                  </div>
+
+                  <div class="flex gap-2">
+
+                    <button
+                      @click.stop="handleSaveRange"
+                      class="
+                        bg-blue-600
+                        px-3
+                        py-1
+                        rounded-lg
+                      "
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      class="
+                        bg-yellow-600
+                        px-3
+                        py-1
+                        rounded-lg
+                      "
+                    >
+                      Rename
+                    </button>
+
+                    <button
+                      class="
+                        bg-purple-600
+                        px-3
+                        py-1
+                        rounded-lg
+                      "
+                    >
+                      Copy
+                    </button>
+
+                    <button
+                      @click.stop="
+                        handleDeleteRange(range.id)
+                      "
+                      class="
+                        bg-red-600
+                        px-3
+                        py-1
+                        rounded-lg
+                      "
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
-      <div class="mt-12">
+      <!-- RIGHT PANEL -->
+      <div>
 
+        <!-- ACTION BUTTONS -->
         <div class="flex gap-4 mb-6">
 
           <button
@@ -293,14 +547,16 @@ onMounted(() => {
 
         </div>
 
+        <!-- RANGE GRID -->
         <RangeGrid
           :selectedHands="selectedHands"
           @toggle-hand="toggleHand"
         />
 
       </div>
+
     </div>
 
   </div>
-  
+
 </template>

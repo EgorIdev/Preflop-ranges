@@ -7,10 +7,12 @@ export const getRanges = async () => {
 }
 
 export const createRange = async (
-  name: string
+  name: string,
+  groupId: number | null
 ) => {
   const response = await api.post('/ranges', {
     name,
+    group_id: groupId,
   })
 
   return response.data
