@@ -1,14 +1,20 @@
 <script setup lang="ts">
-defineProps<{
+
+import type {
+  RangeHand
+} from '../../types/rangeHand'
+
+const props = defineProps<{
   hand: string
-  selected: boolean
-  action?: 'raise' | 'call'
-  }>()
+
+  rangeHand?: RangeHand
+}>()
 
 const emit = defineEmits<{
   (e: 'mousedown'): void
   (e: 'mouseenter'): void
 }>()
+
 </script>
 
 <template>
@@ -17,27 +23,71 @@ const emit = defineEmits<{
     @mousedown="emit('mousedown')"
     @mouseenter="emit('mouseenter')"
     class="
+      relative
       aspect-square
       rounded
-      flex
-      items-center
-      justify-center
-      text-sm
-      font-semibold
+      overflow-hidden
       cursor-pointer
-      transition
       border
+      border-zinc-700
       select-none
     "
-    :class="[
-      selected
-        ? action === 'raise'
-          ? 'bg-red-600 border-red-400'
-          : 'bg-green-600 border-green-400'
-        : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700'
-    ]"
   >
-    {{ hand }}
+
+    <!-- RAISE COLOR -->
+    <div
+      v-if="rangeHand?.raise_percentage"
+
+      class="
+        absolute
+        left-0
+        top-0
+        bottom-0
+        bg-red-600
+      "
+
+      :style="{
+        width:
+          rangeHand.raise_percentage + '%'
+      }"
+    />
+
+    <!-- CALL COLOR -->
+    <div
+      v-if="rangeHand?.call_percentage"
+
+      class="
+        absolute
+        top-0
+        bottom-0
+        bg-green-600
+      "
+
+      :style="{
+        left:
+          rangeHand.raise_percentage + '%',
+
+        width:
+          rangeHand.call_percentage + '%'
+      }"
+    />
+
+    <!-- HAND LABEL -->
+    <div
+      class="
+        absolute
+        inset-0
+        flex
+        items-center
+        justify-center
+        text-sm
+        font-semibold
+        text-white
+      "
+    >
+      {{ hand }}
+    </div>
+
   </div>
 
 </template>

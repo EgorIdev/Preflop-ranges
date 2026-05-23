@@ -8,12 +8,12 @@ use App\Models\Range;
 
 class RangeItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'range_id',
         'hand',
-        'action',
+        'raise_percentage',
+        'call_percentage',
+        'fold_percentage',
     ];
 
     public function range()

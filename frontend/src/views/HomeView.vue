@@ -27,7 +27,11 @@ const ranges = ref<Range[]>([])
 const rangeName = ref('')
 const selectedHands = ref<RangeHand[]>([])
 const currentRangeId = ref<number | null>(null)
-const currentAction = ref<'raise' | 'call'>('raise')
+const currentAction =
+  ref<'raise' | 'call'>('raise')
+
+const currentPercentage =
+  ref(100)
 
 const groups = ref<RangeGroup[]>([])
 const groupName = ref('')
@@ -90,10 +94,19 @@ const loadRange = (range: Range) => {
   currentRangeId.value = range.id
 
   selectedHands.value =
-  range.items.map(item => ({
-    hand: item.hand,
-    action: item.action as 'raise' | 'call',
-  }))
+    range.items.map(item => ({
+
+      hand: item.hand,
+
+      raise_percentage:
+        item.raise_percentage,
+
+      call_percentage:
+        item.call_percentage,
+
+      fold_percentage:
+        item.fold_percentage,
+    }))
 }
 
 const toggleHand = (hand: string) => {
@@ -103,27 +116,59 @@ const toggleHand = (hand: string) => {
       item => item.hand === hand
     )
 
+  // ЕСЛИ РУКИ ЕЩЕ НЕТ
   if (!existing) {
 
     selectedHands.value.push({
+
       hand,
-      action: currentAction.value,
+
+      raise_percentage:
+        currentAction.value === 'raise'
+          ? currentPercentage.value
+          : 0,
+
+      call_percentage:
+        currentAction.value === 'call'
+          ? currentPercentage.value
+          : 0,
+
+      fold_percentage:
+        100 - currentPercentage.value,
     })
 
     return
   }
 
-  if (existing.action === currentAction.value) {
+  // ОБНОВЛЯЕМ СУЩЕСТВУЮЩУЮ РУКУ
 
-    selectedHands.value =
-      selectedHands.value.filter(
-        item => item.hand !== hand
-      )
+  if (currentAction.value === 'raise') {
 
-    return
+    existing.raise_percentage =
+      currentPercentage.value
+
+    existing.fold_percentage =
+      100
+      - existing.raise_percentage
+      - existing.call_percentage
   }
 
-  existing.action = currentAction.value
+  if (currentAction.value === 'call') {
+
+    existing.call_percentage =
+      currentPercentage.value
+
+    existing.fold_percentage =
+      100
+      - existing.raise_percentage
+      - existing.call_percentage
+  }
+
+  // НЕ ДАЕМ УЙТИ В МИНУС
+
+  if (existing.fold_percentage < 0) {
+    existing.fold_percentage = 0
+  }
 }
 
 const handleSaveRange = async () => {
@@ -544,6 +589,29 @@ onMounted(() => {
           >
             Call
           </button>
+
+          <div
+            class="
+              flex
+              items-center
+              gap-4
+              mb-6
+            "
+          >
+
+            <div class="w-24">
+              {{ currentPercentage }}%
+            </div>
+
+            <input
+              v-model="currentPercentage"
+              type="range"
+              min="0"
+              max="100"
+              class="w-full"
+            />
+
+          </div>          
 
         </div>
 

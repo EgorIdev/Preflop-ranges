@@ -1,4 +1,9 @@
-export type RangeHand = {
+export interface RangeHand {
   hand: string
-  action: 'raise' | 'call'
+
+  raise_percentage: number
+
+  call_percentage: number
+
+  fold_percentage: number
 }

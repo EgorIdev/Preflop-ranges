@@ -38,30 +38,39 @@ class RangeController extends Controller
         ]);
     }
 
-    public function saveItems(
-        Request $request,
-        Range $range
-    )
-    {
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-        ]);
-
-        $range->items()->delete();
-
-        foreach ($validated['items'] as $item) {
-
-            RangeItem::create([
-                'range_id' => $range->id,
-                'hand' => $item['hand'],
-                'action' => $item['action'],
+        public function saveItems(
+            Request $request,
+            Range $range
+        )
+        {
+            $validated = $request->validate([
+                'items' => ['required', 'array'],
             ]);
-        }
 
-        return response()->json([
-            'message' => 'Range items saved',
-        ]);
-    }    
+            $range->items()->delete();
+
+            foreach ($validated['items'] as $item) {
+
+                RangeItem::create([
+                    'range_id' => $range->id,
+
+                    'hand' => $item['hand'],
+
+                    'raise_percentage' =>
+                        $item['raise_percentage'] ?? 0,
+
+                    'call_percentage' =>
+                        $item['call_percentage'] ?? 0,
+
+                    'fold_percentage' =>
+                        $item['fold_percentage'] ?? 0,
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Range items saved',
+            ]);
+        }  
     
     
 }

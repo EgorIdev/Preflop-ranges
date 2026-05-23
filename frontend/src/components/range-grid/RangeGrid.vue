@@ -64,18 +64,13 @@ onUnmounted(() => {
     <RangeCell
       v-for="hand in row"
       :key="hand"
+
       :hand="hand"
 
-      :selected="
-        props.selectedHands.some(
-          item => item.hand === hand
-        )
-      "
-
-      :action="
+      :rangeHand="
         props.selectedHands.find(
           item => item.hand === hand
-        )?.action
+        )
       "
 
       @mousedown="handleMouseDown(hand)"
